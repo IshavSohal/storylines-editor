@@ -488,6 +488,7 @@ export default class SlideEditorV extends Vue {
                 children: []
             }
         };
+        console.log(this.configFileStructure);
 
         // Before swapping panel type, update sources from the to-be-deleted config.
         this.currentSlide.panel.forEach((panel: BasePanel) => this.removeSourceCounts(panel));
@@ -518,6 +519,8 @@ export default class SlideEditorV extends Vue {
             }
 
             case 'image': {
+                // as long as assets are uploaded/removed from the appropriate folders (either shared or current lang),
+                // then this should work fine as is
                 const imagePanel = panel as ImagePanel;
                 this.sourceCounts[imagePanel.src] -= 1;
                 if (this.sourceCounts[imagePanel.src] === 0) {
@@ -578,7 +581,14 @@ export default class SlideEditorV extends Vue {
             typeof (this.$refs.editor as ImageEditorV | ChartEditorV | VideoEditorV | CustomEditorV).saveChanges ===
                 'function'
         ) {
+            // console.log('slideeditor.vue - saving changes after opening advanced editor ');
+            // console.log('editor for whcih we also save changes for');
+            // console.log(this.$refs.editor);
+            // console.log('slide config before saving image panel slide');
+            // console.log(JSON.parse(JSON.stringify(this.currentSlide)));
             (this.$refs.editor as ImageEditorV | ChartEditorV | VideoEditorV | CustomEditorV).saveChanges();
+            // console.log('slide config after saving image panel slide');
+            // console.log(JSON.parse(JSON.stringify(this.currentSlide)));
         }
     }
 

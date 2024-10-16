@@ -127,6 +127,8 @@ export default class ImageEditorV extends Vue {
     }
 
     mounted(): void {
+        console.log('');
+        console.log('image panel mounted');
         // This basically allows us to access the image(s) using one consistent variable instead of needing to check panel type.
         const images =
             this.panel.type === PanelType.Slideshow
@@ -151,6 +153,8 @@ export default class ImageEditorV extends Vue {
 
             // Process each existing image.
             images.map((image: ImagePanel) => {
+                console.log('current image');
+                console.log(image);
                 // Check if the config file exists in the ZIP folder first.
                 const assetSrc = `${image.src.substring(image.src.indexOf('/') + 1)}`;
                 const filename = image.src.replace(/^.*[\\/]/, '');
@@ -179,34 +183,94 @@ export default class ImageEditorV extends Vue {
         }
     }
 
+    // helper for onFileChange and dropImages. Maps a File object to an ImageFile object
+    fileMappingHelper(file: File) {
+        let uploadSource = '';
+        const oppositeLang = this.lang === 'en' ? 'fr' : 'en';
+        const oppositeFileSource = `${this.configFileStructure.uuid}/assets/${oppositeLang}/${file.name}`;
+        const currFileSource = `${this.configFileStructure.uuid}/assets/${this.lang}/${file.name}`;
+        let oppositeSourceCount = 0;
+        let currSourceCount = 0;
+        console.log('root of shared assets folder');
+        console.log('file name of dropped image');
+        console.log(file.name);
+        console.log('opposite langs assets folder');
+        console.log(this.configFileStructure.assets[oppositeLang].files);
+        console.log('file in opposite langs asets folder?');
+        console.log(!!this.configFileStructure.assets[oppositeLang].file(file.name));
+        console.log('file in current langs asets folder?');
+        console.log(!!this.configFileStructure.assets[this.lang].file(file.name));
+
+        // TODO: after deleting a file, we need the upload endpoint to replace the products folder
+        // entirely, rather than just write over it. This is writing over will not delete files/folders
+        // within the products folder that is not in configFileStructure.zip. Consider creating a flag
+        // within configFileStructure???
+        if (this.configFileStructure.assets[oppositeLang].file(file.name)) {
+            console.log('image file being dropped already exists in opposite langs assets folder. delete');
+            this.sourceCounts[oppositeFileSource] = 0;
+            this.configFileStructure.assets[oppositeLang].remove(file.name);
+            oppositeSourceCount = this.sourceCounts[oppositeFileSource];
+            if (this.configFileStructure.assets[this.lang].file(file.name)) {
+                console.log('image file being dropped also exists in the current langs assets folder. delete');
+                this.sourceCounts[currFileSource] = 0;
+                this.configFileStructure.assets[this.lang].remove(file.name);
+                currSourceCount = this.sourceCounts[currFileSource];
+            }
+            console.log('add image to shared assets folder');
+            uploadSource = `${this.configFileStructure.uuid}/assets/shared/${file.name}`;
+            this.configFileStructure.assets['shared'].file(file.name, file);
+        } else if (this.configFileStructure.assets['shared'].file(file.name)) {
+            console.log('image file not in opposite langs assets folder,but is in shared assets folder');
+            uploadSource = `${this.configFileStructure.uuid}/assets/shared/${file.name}`;
+            this.configFileStructure.assets['shared'].file(file.name, file);
+        } else {
+            uploadSource = `${this.configFileStructure.uuid}/assets/${this.lang}/${file.name}`;
+            console.log('image file is not in opposite lang or shared assets folders');
+            this.configFileStructure.assets[this.lang].file(file.name, file);
+        }
+        console.log('uploadSource');
+        console.log(uploadSource);
+        // TODO: check if uploadSource is shared folder. if so, include source counts of the deleted files
+        if (this.sourceCounts[uploadSource]) {
+            this.sourceCounts[uploadSource] += 1 + oppositeSourceCount + currSourceCount;
+        } else {
+            this.sourceCounts[uploadSource] = 1 + oppositeSourceCount + currSourceCount;
+        }
+
+        let imageSrc = URL.createObjectURL(file);
+        console.log('imageSrc');
+        console.log(imageSrc);
+        return {
+            id: file.name,
+            altText: '',
+            caption: '',
+            src: imageSrc
+        };
+    }
+
+    // TODO: since this is so similar to dropImages(), create a helper to perform the file mapping logic
     onFileChange(e: Event): void {
+        console.log(' ');
+        console.log('onfilechange event');
+        console.log(e);
         // create object URL(s) to display image(s)
         const filelist = Array.from((e.target as HTMLInputElement).files as ArrayLike<File>);
         this.imagePreviews.push(
             ...filelist.map((file: File) => {
-                // Add the uploaded images to the product ZIP file.
-                const uploadSource = `${this.configFileStructure.uuid}/assets/${this.lang}/${file.name}`;
-                this.configFileStructure.assets[this.lang].file(file.name, file);
-
-                if (this.sourceCounts[uploadSource]) {
-                    this.sourceCounts[uploadSource] += 1;
-                } else {
-                    this.sourceCounts[uploadSource] = 1;
-                }
-
-                let imageSrc = URL.createObjectURL(file);
-                return {
-                    id: file.name,
-                    altText: '',
-                    caption: '',
-                    src: imageSrc
-                };
+                return this.fileMappingHelper(file);
             })
         );
         this.onImagesEdited();
     }
 
     dropImages(e: DragEvent): void {
+        console.log(' ');
+        console.log('configFileStructure: Before');
+        console.log(JSON.parse(JSON.stringify(this.configFileStructure)));
+        console.log('image panel: before');
+        console.log(JSON.parse(JSON.stringify(this.panel)));
+        console.log('imagePreviews: before');
+        console.log(JSON.parse(JSON.stringify(this.imagePreviews)));
         if (e.dataTransfer !== null) {
             let files = [...e.dataTransfer.files];
 
@@ -217,39 +281,51 @@ export default class ImageEditorV extends Vue {
 
             this.imagePreviews.push(
                 ...files.map((file: File) => {
-                    // Add the uploaded images to the product ZIP file.
-                    const uploadSource = `${this.configFileStructure.uuid}/assets/${this.lang}/${file.name}`;
-                    this.configFileStructure.assets[this.lang].file(file.name, file);
-
-                    if (this.sourceCounts[uploadSource]) {
-                        this.sourceCounts[uploadSource] += 1;
-                    } else {
-                        this.sourceCounts[uploadSource] = 1;
-                    }
-
-                    let imageSrc = URL.createObjectURL(file);
-                    return {
-                        id: file.name,
-                        altText: '',
-                        caption: '',
-                        src: imageSrc
-                    };
+                    return this.fileMappingHelper(file);
                 })
             );
             this.dragging = false;
+
+            console.log('configFileStructure: After');
+            console.log(JSON.parse(JSON.stringify(this.configFileStructure)));
+            console.log('image panel: after');
+            console.log(JSON.parse(JSON.stringify(this.panel)));
+            console.log('imagePreviews: after');
+            console.log(JSON.parse(JSON.stringify(this.imagePreviews)));
         }
         this.onImagesEdited();
     }
 
     deleteImage(img: ImageFile): void {
+        console.log(' ');
         const idx = this.imagePreviews.findIndex((file: ImageFile) => file.id === img.id);
         if (idx !== -1) {
-            const fileSource = `${this.configFileStructure.uuid}/assets/${this.lang}/${this.imagePreviews[idx].id}`;
+            let fileSource = '';
+            // TODO: check if the file exists in the shared assets folder. If so, decrement the source count of the
+            // file in that folder. Otherwise, decrement the source count of the file in the current langs folder
+            if (this.configFileStructure.assets['shared'].file(this.imagePreviews[idx].id)) {
+                fileSource = `${this.configFileStructure.uuid}/assets/shared/${this.imagePreviews[idx].id}`;
+            } else {
+                fileSource = `${this.configFileStructure.uuid}/assets/${this.lang}/${this.imagePreviews[idx].id}`;
+            }
 
             // Remove the image from the product ZIP file.
             this.sourceCounts[fileSource] -= 1;
             if (this.sourceCounts[fileSource] === 0) {
-                this.configFileStructure.assets[this.lang].remove(this.imagePreviews[idx].id);
+                //TODO: check if this file exists in the shared assets folder. If so, remove from there. Otherwise
+                // remove from the the current langs assets folder
+                console.log('image file being deleted');
+                console.log(img);
+                console.log('id of this image file');
+                console.log(this.imagePreviews[idx].id);
+
+                if (this.configFileStructure.assets['shared'].file(this.imagePreviews[idx].id)) {
+                    console.log('file being deleted exists in the shared folder, delete from there');
+                    this.configFileStructure.assets['shared'].remove(this.imagePreviews[idx].id);
+                } else {
+                    console.log('file being deleted should just be deleted from current langs folder');
+                    this.configFileStructure.assets[this.lang].remove(this.imagePreviews[idx].id);
+                }
                 URL.revokeObjectURL(this.imagePreviews[idx].src);
             }
             this.imagePreviews.splice(idx, 1);
@@ -258,6 +334,10 @@ export default class ImageEditorV extends Vue {
     }
 
     saveChanges(): void {
+        console.log(' ');
+        console.log('saveChanges of image panel executed');
+        console.log('configFileStructure before save');
+        console.log(this.configFileStructure);
         if (this.edited) {
             // Delete the existing properties so we can rebuild the object.
             Object.keys(this.panel).forEach((key) => {
@@ -276,6 +356,8 @@ export default class ImageEditorV extends Vue {
 
                 // Grab the one image from the array.
                 const imageFile = this.imagePreviews[0];
+                console.log('individual imageFile of image panel');
+                console.log(imageFile);
 
                 // Sort of gross, but required to update the panel config as we're not allowed to directly manipulate props.
                 Object.keys(imageFile).forEach((key) => {
@@ -286,17 +368,37 @@ export default class ImageEditorV extends Vue {
                     (this.panel as ImagePanel)[key] = imageFile[key];
                 });
 
-                (this.panel as ImagePanel).src = `${this.configFileStructure.uuid}/assets/${this.lang}/${imageFile.id}`;
+                // q: should the image be deleted from this.configFileStucture AGAIN in this scenario?
+                if (this.configFileStructure.assets['shared'].file(imageFile.id)) {
+                    console.log('image will be put into shared folder');
+                } else {
+                    console.log('image will be put into current langs folde');
+                }
+                // check if the image comes from the shared folder or the current lang folder
+                (this.panel as ImagePanel).src = `${this.configFileStructure.uuid}/assets/${
+                    this.configFileStructure.assets['shared'].file(imageFile.id) ? 'shared' : this.lang
+                }/${imageFile.id}`;
             } else {
                 // Otherwise, convert this to a slideshow panel.
                 this.panel.type = PanelType.Slideshow;
                 this.panel.caption = this.slideshowCaption ?? undefined;
 
-                // Turn each of the image configs into an image panel and add them to the slidesow.
+                // Turn each of the image configs into an image panel and add them to the slideshow.
                 (this.panel as SlideshowPanel).items = this.imagePreviews.map((imageFile: ImageFile) => {
+                    console.log('current image file of slideshow panel');
+                    console.log(imageFile);
+                    if (this.configFileStructure.assets['shared'].file(imageFile.id)) {
+                        console.log('image will be put into shared folder');
+                    } else {
+                        console.log('image will be put into current langs folde');
+                    }
+                    // check if the image comes from the shared folder or the current lang folder
+                    const imageSource = `${this.configFileStructure.uuid}/assets/${
+                        this.configFileStructure.assets['shared'].file(imageFile.id) ? 'shared' : this.lang
+                    }/${imageFile.id}`;
                     return {
                         ...imageFile,
-                        src: `${this.configFileStructure.uuid}/assets/${this.lang}/${imageFile.id}`,
+                        src: imageSource,
                         type: PanelType.Image
                     } as ImagePanel;
                 });

@@ -447,7 +447,8 @@ export default class MetadataEditorV extends Vue {
             this.metadata.tocOrientation = 'vertical';
             this.metadata.returnTop = true;
         }
-
+        console.log('route values');
+        console.log(this.$route);
         // Find which view to render based on route
         if (this.$route.name === 'editor') {
             this.loadEditor = true;
@@ -455,6 +456,8 @@ export default class MetadataEditorV extends Vue {
 
             // Properties already passed in props, load editor view (could use a refactor to clean up this workflow process)
             if (props && props.configs && props.configFileStructure) {
+                console.log('props');
+                console.log(props);
                 this.configs = props.configs;
                 this.configLang = props.configLang;
                 this.configFileStructure = props.configFileStructure;
@@ -464,8 +467,13 @@ export default class MetadataEditorV extends Vue {
                 this.loadExisting = props.existing;
                 this.unsavedChanges = props.unsavedChanges;
                 // Load product logo (if provided).
+                //TODO: logo should be in shared lang folder
                 const logo = this.configs[this.configLang]?.introSlide.logo?.src;
-                const logoSrc = `assets/${this.configLang}/${this.metadata.logoName}`;
+                console.log('logo');
+                console.log(logo);
+                const logoSrc = `assets/shared/${this.metadata.logoName}`;
+                console.log('logoSrc');
+                console.log(logoSrc);
 
                 if (logo) {
                     const logoFile = this.configFileStructure?.zip.file(logoSrc);
@@ -501,6 +509,7 @@ export default class MetadataEditorV extends Vue {
 
         // If a product UUID is provided, fetch the contents from the server.
         if (this.$route.params.uid) {
+            console.log('fetching config from server');
             this.generateRemoteConfig();
         }
     }
@@ -519,7 +528,8 @@ export default class MetadataEditorV extends Vue {
         if (!this.metadata.logoName) {
             config.introSlide.logo.src = '';
         } else if (!this.metadata.logoName.includes('http')) {
-            config.introSlide.logo.src = `${this.uuid}/assets/${this.configLang}/${this.logoImage?.name}`;
+            // product logo located in shared folder now
+            config.introSlide.logo.src = `${this.uuid}/assets/shared/${this.logoImage?.name}`;
         } else {
             config.introSlide.logo.src = this.metadata.logoName;
         }
@@ -536,6 +546,8 @@ export default class MetadataEditorV extends Vue {
 
         configZip.file(fileName, formattedConfigFile);
         configZip.file(`${this.uuid}_${otherLang}.json`, formattedOtherLangConfig);
+        console.log('zipped config (so far)');
+        console.log(JSON.parse(JSON.stringify(configZip)));
 
         // Generate the file structure, defer uploading the image until the structure is created.
         this.configFileStructureHelper(configZip, this.logoImage);
@@ -833,14 +845,24 @@ export default class MetadataEditorV extends Vue {
         const assetsFolder = configZip.folder('assets');
         const chartsFolder = configZip.folder('charts');
         const rampConfigFolder = configZip.folder('ramp-config');
+        console.log('current state of configZip');
+        console.log(JSON.parse(JSON.stringify(configZip)));
+        console.log('assetsFolder');
+        console.log(JSON.parse(JSON.stringify(assetsFolder)));
+        console.log('chartsFolder');
+        console.log(JSON.parse(JSON.stringify(chartsFolder)));
+        console.log('rampConfigFolder');
+        console.log(JSON.parse(JSON.stringify(rampConfigFolder)));
 
+        //TODO: add 'shared' folder for assets
         this.configFileStructure = {
             uuid: this.uuid,
             zip: configZip,
             configs: this.configs as unknown as { [key: string]: StoryRampConfig },
             assets: {
                 en: (assetsFolder as JSZip).folder('en') as JSZip,
-                fr: (assetsFolder as JSZip).folder('fr') as JSZip
+                fr: (assetsFolder as JSZip).folder('fr') as JSZip,
+                shared: (assetsFolder as JSZip).folder('shared') as JSZip
             },
             charts: {
                 en: (chartsFolder as JSZip).folder('en') as JSZip,
@@ -849,9 +871,16 @@ export default class MetadataEditorV extends Vue {
             rampConfig: rampConfigFolder as JSZip
         };
 
+        console.log('Initialization of configFileStructure complete');
+        console.log(JSON.parse(JSON.stringify(this.configFileStructure)));
+
         // If uploadLogo is set, upload the logo to the directory.
+        // Q: if we create a shared assets folder, should the logo just go there, since both langs
+        // should have the same logo?
         if (uploadLogo !== undefined) {
-            this.configFileStructure.assets[this.configLang].file(uploadLogo?.name, uploadLogo);
+            console.log('logo uploaded to configFileStructure');
+            console.log(uploadLogo);
+            this.configFileStructure.assets['shared'].file(uploadLogo?.name, uploadLogo);
         }
 
         this.loadConfig();
@@ -920,12 +949,19 @@ export default class MetadataEditorV extends Vue {
 
         const logo = config.introSlide.logo?.src;
         if (logo) {
+            console.log('logo');
+            console.log(logo);
             // Set the alt text for the logo.
             this.metadata.logoAltText = config.introSlide.logo?.altText ? config.introSlide.logo.altText : '';
 
             // Fetch the logo from the folder (if it exists).
             const logoSrc = `${logo.substring(logo.indexOf('/') + 1)}`;
+            console.log('logoSrc');
+            console.log(logoSrc);
+            console.log('logoSrc being added to zip folder of configFileStructure');
             const logoName = `${logo.split('/')[logo.split('/').length - 1]}`;
+            console.log('logoName');
+            console.log(logoName);
             const logoFile = this.configFileStructure?.zip.file(logoSrc);
 
             if (logoFile) {
@@ -962,12 +998,17 @@ export default class MetadataEditorV extends Vue {
      */
     generateConfig(): ConfigFileStructure {
         this.saving = true;
-
+        console.log('current configs');
+        console.log(JSON.parse(JSON.stringify(this.configs)));
+        console.log('current configFileStructure');
+        console.log(JSON.parse(JSON.stringify(this.configFileStructure)));
         // Update the configuration file.
         const fileName = `${this.uuid}_${this.configLang}.json`;
         const formattedConfigFile = JSON.stringify(this.configs[this.configLang], null, 4);
 
         this.configFileStructure?.zip.file(fileName, formattedConfigFile);
+        console.log('new configFileStructure');
+        console.log(JSON.parse(JSON.stringify(this.configFileStructure)));
 
         // Upload the ZIP file.
         this.configFileStructure?.zip.generateAsync({ type: 'blob' }).then((content: Blob) => {
@@ -986,7 +1027,9 @@ export default class MetadataEditorV extends Vue {
                     this.loadExisting = true; // if editExisting was false, we can now set it to true
 
                     if (import.meta.env.VITE_APP_CURR_ENV) {
+                        console.log('test1');
                         if (responseData.new) {
+                            console.log('test2');
                             axios
                                 .post(import.meta.env.VITE_APP_NET_API_URL + '/api/user/register', {
                                     uuid: this.uuid,
@@ -1016,6 +1059,7 @@ export default class MetadataEditorV extends Vue {
                                 })
                                 .catch((error: any) => console.log(error.response || error));
                         } else {
+                            console.log('test3');
                             formData.append('uuid', this.uuid);
                             formData.append('titleEn', this.configs['en']?.title ?? '');
                             formData.append('titleFr', this.configs['fr']?.title ?? '');
@@ -1032,6 +1076,7 @@ export default class MetadataEditorV extends Vue {
                                     }, 500);
                                 });
                         }
+                        console.log('test4');
 
                         fetch(this.apiUrl + `/retrieveMessages`)
                             .then((res: any) => {
@@ -1046,6 +1091,7 @@ export default class MetadataEditorV extends Vue {
                             })
                             .catch((error: any) => console.log(error.response || error));
                     } else {
+                        console.log('test5');
                         // padding to prevent save button from being clicked rapidly
                         setTimeout(() => {
                             this.saving = false;
@@ -1093,11 +1139,9 @@ export default class MetadataEditorV extends Vue {
             if (!this.metadata.logoName) {
                 config.introSlide.logo.src = '';
             } else if (!this.metadata.logoName.includes('http')) {
-                config.introSlide.logo.src = `${this.uuid}/assets/${this.configLang}/${this.logoImage?.name}`;
-                this.configFileStructure?.assets[this.configLang].file(
-                    this.logoImage?.name as string,
-                    this.logoImage as File
-                );
+                // logo should now be in shared folder
+                config.introSlide.logo.src = `${this.uuid}/assets/shared/${this.logoImage?.name}`;
+                this.configFileStructure?.assets['shared'].file(this.logoImage?.name as string, this.logoImage as File);
             } else {
                 config.introSlide.logo.src = this.metadata.logoName;
             }
@@ -1273,6 +1317,7 @@ export default class MetadataEditorV extends Vue {
             Message.error('Missing required field: UUID');
             this.error = true;
         } else {
+            console.log('TIME to generate a new config');
             this.generateNewConfig();
         }
     }

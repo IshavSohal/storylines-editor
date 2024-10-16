@@ -99,6 +99,9 @@ export default class CustomEditorV extends Vue {
                 }
             );
         });
+        // console.log('updatedConfig after mounting');
+        // console.log(this.updatedConfig);
+        // console.log(this.config);
         this.updatedConfig = this.config;
     }
 
@@ -115,6 +118,8 @@ export default class CustomEditorV extends Vue {
     }
 
     onJsonChange(json: any): void {
+        // console.log('JSON change');
+        // console.log(json);
         // json editor library does not contain 2-way v-model binding so need to set manually
         this.updatedConfig = json;
         this.edited = true;
@@ -129,6 +134,7 @@ export default class CustomEditorV extends Vue {
     }
 
     saveChanges(): void {
+        console.log('customeditor.vue - saving changes after opening advanced editor ');
         this.$emit('config-edited', this.updatedConfig);
         this.edited = false;
 

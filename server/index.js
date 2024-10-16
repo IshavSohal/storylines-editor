@@ -66,9 +66,14 @@ app.route(ROUTE_PREFIX + '/upload').post(function (req, res, next) {
             res.status(500).send({ status: 'Internal Server Error' });
             return;
         }
+        logger('INFO', file.data.originalFilename);
 
         const fileName = `${TARGET_PATH}/${file.data.originalFilename.split('.zip')[0]}`;
+        logger('INFO', 'fileName:');
+        logger('INFO', fileName);
         const secureFilename = `${UPLOAD_PATH}/${file.data.newFilename}`;
+        logger('INFO', 'secureFilename:');
+        logger('INFO', secureFilename);
         let newStorylines = false;
 
         // SECURITY FEATURE (?): Check if the uploaded filename matches our Storylines UUID format. Prevents overwriting
@@ -106,6 +111,7 @@ app.route(ROUTE_PREFIX + '/upload').post(function (req, res, next) {
             // });
             responseMessages.push({ type: 'INFO', message: `Uploaded files to product ${fileName}` });
             logger('INFO', `Uploaded files to product ${fileName}`);
+            console.log();
 
             // Finally, delete the uploaded zip file.
             safeRM(secureFilename, UPLOAD_PATH);
