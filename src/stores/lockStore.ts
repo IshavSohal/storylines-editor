@@ -18,6 +18,8 @@ export const useLockStore = defineStore('lock', {
     actions: {
         // Opens a connection with the web socket
         initConnection() {
+            console.log(' ');
+            console.log('initConnection');
             return new Promise<void>((resolve) => {
                 const socketUrl = `${
                     import.meta.env.VITE_APP_CURR_ENV ? import.meta.env.VITE_APP_API_URL : 'http://localhost:6040'
@@ -36,9 +38,9 @@ export const useLockStore = defineStore('lock', {
                 };
 
                 // Spam the server with nonsense messages every 30 seconds to prevent firefox from nuking the connection.
-                const msgSpam = setInterval(() => {
-                    this.socket?.send(JSON.stringify({ status: 'nonsense' }));
-                }, 30000);
+                // const msgSpam = setInterval(() => {
+                //     this.socket?.send(JSON.stringify({ status: 'nonsense' }));
+                // }, 30000);
 
                 // Close the socket connection before the user closes the window.
                 window.addEventListener('beforeunload', () => {
@@ -50,6 +52,8 @@ export const useLockStore = defineStore('lock', {
         // Attempts to lock a storyline for this user.
         // Returns a promise that resolves if the lock was successfully fetched and rejects if it was not.
         async lockStoryline(uuid: string): Promise<void> {
+            console.log(' ');
+            console.log('lockStoryline');
             // Stop the previous storyline's timer
             clearInterval(this.timeInterval);
 
@@ -63,7 +67,10 @@ export const useLockStore = defineStore('lock', {
                 this.socket?.send(JSON.stringify({ uuid, lock: true, clientId: this.clientId }));
 
                 const handleMessage = (event: MessageEvent) => {
+                    console.log(' ');
+                    console.log('handleMessage');
                     const data = JSON.parse(event.data);
+                    console.log(data);
 
                     if (!data || data.status === 'nonsense' || data.clientId !== this.clientId) {
                         return;
@@ -88,6 +95,8 @@ export const useLockStore = defineStore('lock', {
         },
         // Unlocks the curent storyline for this user. Only to be called on session end.
         unlockStoryline() {
+            console.log(' ');
+            console.log('unlocking storyline');
             clearInterval(this.timeInterval);
             if (this.connected) {
                 this.socket!.send(JSON.stringify({ uuid: this.uuid, lock: false, clientId: this.clientId }));
@@ -98,15 +107,17 @@ export const useLockStore = defineStore('lock', {
         },
         // Resets the current session back to a full 30 minutes.
         resetSession(overrideTime?: number) {
-            this.timeRemaining =
-                overrideTime !== undefined
-                    ? overrideTime
-                    : import.meta.env.VITE_APP_CURR_ENV
-                    ? Number(import.meta.env.VITE_SESSION_END) * 60
-                    : 1800; //  This value is in seconds!!! Don't mix up the units!!!
+            this.timeRemaining = 300;
+            // overrideTime !== undefined
+            //     ? overrideTime
+            //     : import.meta.env.VITE_APP_CURR_ENV
+            //     ? Number(import.meta.env.VITE_SESSION_END) * 60
+            //     : 1800; //  This value is in seconds!!! Don't mix up the units!!!
             clearInterval(this.timeInterval);
             // Update the time remaining every second.
             this.timeInterval = setInterval(() => {
+                console.log('time remaining');
+                console.log(this.timeRemaining);
                 if (this.timeRemaining === 0) {
                     clearInterval(this.timeInterval);
                 } else {

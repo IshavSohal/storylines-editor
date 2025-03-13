@@ -616,10 +616,10 @@ wss.on('connection', (ws) => {
     ws.on('message', function (msg) {
         const message = JSON.parse(msg);
 
-        if (message.status === 'nonsense') {
-            ws.send(JSON.stringify({ status: 'nonsense' }));
-            return;
-        }
+        // if (message.status === 'nonsense') {
+        //     ws.send(JSON.stringify({ status: 'nonsense' }));
+        //     return;
+        // }
 
         const { uuid, lock, clientId } = message;
 

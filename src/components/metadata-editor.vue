@@ -846,11 +846,16 @@ export default class MetadataEditorV extends Vue {
     }
 
     handleSessionTimeout(): void {
+        console.log(' ');
+        console.log('handleSessionTimeout');
         // We prompt the user to extend the session when session warn minutes have passed.
-        const warnTime = import.meta.env.VITE_APP_CURR_ENV ? Number(import.meta.env.VITE_SESSION_WARN) : 5;
+        const warnTime = 2; //import.meta.env.VITE_APP_CURR_ENV ? Number(import.meta.env.VITE_SESSION_WARN) : 5;
         const isFirefox = navigator.userAgent.toLowerCase().includes('firefox');
         const timeBuffer = isFirefox ? 2000 : 0;
         this.lockStore.confirmationTimeout = setTimeout(() => {
+            console.log('warning displayed to user');
+            console.log('time remaining');
+            console.log(this.timeRemaining);
             // First, remove inactivity event listeners, otherwise moving the mouse will extend the session!.
             document.onmousemove = () => undefined;
             document.onkeydown = () => undefined;
@@ -859,6 +864,9 @@ export default class MetadataEditorV extends Vue {
         }, this.lockStore.timeRemaining * 1000 - warnTime * 60 * 1000 + timeBuffer);
         // After the timer has run out, if the session was not extended, go back to the landing page (which will unlock the storyline).
         this.lockStore.endTimeout = setTimeout(() => {
+            console.log('session is ending');
+            console.log('time remaining');
+            console.log(this.lockStore.timeRemaining * 1000 + 1000 + timeBuffer);
             // First, remove inactivity event listeners, otherwise moving the mouse will extend the session!.
             document.onmousemove = () => undefined;
             document.onkeydown = () => undefined;
@@ -876,6 +884,8 @@ export default class MetadataEditorV extends Vue {
     }
 
     extendSession(showPopup?: boolean): void {
+        console.log(' ');
+        console.log('extendSession');
         // Clear any lingering timers
         clearTimeout(this.lockStore.endTimeout);
         clearTimeout(this.lockStore.confirmationTimeout);
