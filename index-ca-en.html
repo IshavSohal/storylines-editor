@@ -26,18 +26,85 @@
         <script type="text/javascript">
             document.write(wet.builder.refTop({}));
         </script>
+
     </head>
     <body>
         <!-- template top and no-script fallback -->
         <div id="def-top"></div>
 
-        <div id="wb-cont">
+        <style-blocker id="wb-cont" css-files="/src/style.css">
             <div id="app"></div>
-        </div>
+        </style-blocker >
 
         <!-- template footer and no-script fallback -->
         <div id="def-footer"></div>
 
+        <script type="text/javascript">
+            const componentStyles = []
+            // Handle component styles
+            const observer = new MutationObserver((mutations) => {
+                mutations.forEach((mutation) => {
+                    if (mutation.addedNodes) {
+                        mutation.addedNodes.forEach((node) => {
+                            if (node.tagName === 'STYLE') {
+                                // store styles someplace, then apply them to the shadow
+                                // root once it has been loaded in
+                                const style = node.cloneNode(true);
+                                componentStyles.push(style);
+                                console.log('style');
+                                console.log(style);
+                            }
+                        });
+                    }
+                });
+            });
+            observer.observe(document.head, {
+                childList: true
+            });
+
+            class StyleBlocker extends HTMLElement {
+                constructor() {
+                    super();
+                    this.attachShadow({ mode: 'open' });
+                }
+                connectedCallback() {
+                    console.log('connected callback');
+                    while (this.childNodes.length > 0) {
+                        console.log('element added to shadow root');
+                        console.log(this.childNodes[0]);
+                        this.shadowRoot.appendChild(this.childNodes[0]);
+                    }
+
+
+                    // Classes defined within components are not available in shadow dom
+                    const cssFiles = this.getAttribute('css-files');
+                    if (cssFiles) {
+                        console.log('css files');
+                        console.log(cssFiles);
+                        const arrCssFiles = cssFiles.split(',');
+                        for(let i = 0; i < arrCssFiles.length; i++){
+                            let link = document.createElement('link');
+                            link.setAttribute('rel', 'stylesheet');
+                            link.setAttribute('href', arrCssFiles[i]);
+                            this.shadowRoot.appendChild(link);
+                        }
+                    }
+
+                    componentStyles.forEach(style => {
+                        this.shadowRoot.appendChild(style);
+                    })
+
+                    console.log(componentStyles);
+                }
+            }
+            setTimeout(() => {
+                window.customElements.define('style-blocker', StyleBlocker);
+            }, 4000)
+
+
+            
+
+        </script>
         <script type="text/javascript">
             // URL Parsing for Language Switch
             var url = new URL(window.location.href);
@@ -110,6 +177,9 @@
                 font-size: 16px;
             }
         </style>
+
+
+    
     </body>
 </html>
 <noscript>

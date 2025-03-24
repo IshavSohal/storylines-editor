@@ -625,7 +625,11 @@ export default class EditorV extends Vue {
             threshold: [1]
         });
 
-        observer.observe(document.querySelector('.editor-header') as Element);
+        console.log('editor head');
+        console.log(this.$el.parentNode.querySelector('.editor-header'));
+        console.log({ shadowRoot: this.$el.parentNode });
+
+        observer.observe(this.$el.parentNode.querySelector('.editor-header') as Element);
     }
 
     beforeDestroy(): void {
@@ -636,8 +640,13 @@ export default class EditorV extends Vue {
      * Opens the mobile sidebar drawer.
      */
     openSidebar(): void {
-        document.getElementById('sidebar-mobile')!.style.width = '20rem';
-        document.getElementById('overlay')!.style.display = 'block'; // Show the overlay
+        console.log('openSidebar');
+        console.log(this.$el.parentNode.querySelector('#sidebar-mobile'));
+        console.log(this.$el.parentNode.querySelector('#overlay'));
+        console.log(this.$el.parentNode.body);
+        console.log(this.$el.parentNode);
+        this.$el.parentNode.querySelector('#sidebar-mobile').style.width = '20rem';
+        this.$el.parentNode.querySelector('#overlay').style.display = 'block'; // Show the overlay
         document.body.style.overflow = 'hidden'; // Disable background scrolling
     }
 
@@ -645,8 +654,10 @@ export default class EditorV extends Vue {
      * Closes the mobile sidebar drawer.
      */
     closeSidebar(): void {
-        document.getElementById('sidebar-mobile')!.style.width = '0px';
-        document.getElementById('overlay')!.style.display = 'none'; // Hide the overlay
+        console.log('closeSidebar');
+        console.log(this.$el.parentNode.querySelector('#overlay'));
+        this.$el.parentNode.querySelector('#sidebar-mobile')!.style.width = '0px';
+        this.$el.parentNode.querySelector('#overlay')!.style.display = 'none'; // Hide the overlay
         document.body.style.overflow = ''; // Re-enable background scrolling
     }
 

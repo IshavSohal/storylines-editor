@@ -62,4 +62,4 @@ app.directive('focus-container', FocusContainer);
 app.directive('focus-list', FocusList);
 app.directive('focus-item', FocusItem);
 app.directive('truncate', Truncate);
-app.mount('#app');
+app.mount('#app'); // returning null

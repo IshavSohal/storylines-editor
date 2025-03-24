@@ -45,12 +45,14 @@
                 </ul>
             </div>
         </div>
+        <!-- Setting mode calls  setMode), which calls create(). setMode() is unable to access this.container-->
+        <!-- omponet is searching the document directly for the component. If it is in the shadow dom it will not be detected -->
         <json-editor
             v-model="updatedConfig"
             lang="en"
             :mode="'text'"
             :show-btns="false"
-            :expandedOnStart="true"
+            :expandedOnStart="false"
             @has-error="(err: string) => { jsonError = err; validate()}"
             @json-change="
                 (json: any) => onJsonChange(json)
