@@ -15,6 +15,7 @@ import '@kangc/v-md-editor/lib/style/codemirror-editor.css';
 import githubTheme from '@kangc/v-md-editor/lib/theme/github.js';
 import '@kangc/v-md-editor/lib/theme/style/github.css';
 import enUS from '@kangc/v-md-editor/lib/lang/en-US';
+
 import hljs from 'highlight.js';
 
 // Resources for the codemirror editor
@@ -47,7 +48,7 @@ VueMarkdownEditor.use(githubTheme, {
 
 import { createVfm } from 'vue-final-modal';
 import 'vue-final-modal/style.css';
-const vfm = createVfm();
+export const vfm = createVfm();
 
 import VueTippy from 'vue-tippy';
 import 'tippy.js/dist/tippy.css';
@@ -70,8 +71,11 @@ import 'highcharts-accessible-configuration-kit/dist/highcharts-accessible-confi
 import { FocusContainer, FocusItem, FocusList } from '@/directives/focus-list';
 import { Truncate } from '@/directives/truncate/truncate';
 
+import piniaPluginPersistedstate from 'pinia-plugin-persistedstate';
+
 const app = createApp(App);
 const pinia = createPinia();
+pinia.use(piniaPluginPersistedstate);
 
 app.use(pinia)
     .use(router)
